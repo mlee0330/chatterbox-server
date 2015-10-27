@@ -1,6 +1,22 @@
 /* Import node's http module: */
 var http = require("http");
-var reqHandler = require("./request-handler.js");
+//var reqHandler = require("./request-handler.js");
+var express = require('express');
+var _ = require('underscore');
+var bodyParser = require('body-parser');
+var morgan = require('morgan');
+
+var app = express();
+var storage = [
+  { roomname: 'lobby', username: 'abcd', text: 'How are you?', createdAt: 'Tue, 27 Oct 2015 14:54:07 GMT'},
+  { roomname: 'lobby', username: 'xyz', text: 'Great!', createdAt: 'Tue, 27 Oct 2015 14:54:13 GMT'},
+  { roomname: 'room1', username: 'xyz', text: 'How are you?', createdAt: 'Tue, 27 Oct 2015 14:54:18 GMT'},
+  { roomname: 'room1', username: 'abcd', text: 'Great!', createdAt: 'Tue, 27 Oct 2015 14:54:22 GMT'},
+  { roomname: 'room32', username: 'xyz', text: 'How are you?', createdAt: 'Tue, 27 Oct 2015 14:54:28 GMT'},
+  { roomname: 'room32', username: 'abcd', text: 'Tired of you asking!', createdAt: 'Tue, 27 Oct 2015 14:54:35 GMT'}
+];
+
+
 
 // Every server needs to listen on a port with a unique number. The
 // standard port for HTTP servers is port 80, but that port is
@@ -15,15 +31,69 @@ var port = 3000;
 var ip = "127.0.0.1";
 
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(morgan('combined'));
+
+var server = app.listen(port, ip, function () {
+  console.log("Server is listening at http://%s:%s", ip, port);
+});
+
+// app.all("*", function (req, res, next) {
+//   console.log("Making a request of type " + req.method + " at location " + req.url);
+// })
+
+//app.METHOD( URL , CB )
+
+app.get('/classes/messages' , function (req, res) {
+  res.send({results: storage});
+  //request
+  //do something before response
+  //send response
+  res.end();
+});
+
+app.get('/classes/:room', function(req, res) {
+  var filter = _.filter(storage, function(val){
+    if(val.roomname === req.params.room) {
+      return val;
+    }
+  });
+  res.json({results: filter});
+  res.end();
+});
+
+app.post('/send', function (req, res) {
+  var data = req.body;
+  data.createdAt = new Date();
+  storage.push(data);
+  //res.send("Success")
+  res.status(201);
+  res.end();
+  //console.log(req.body);
+});
+
+app.post('/classes/:room', function (req, res) {
+  var data = req.body;
+  data.createdAt = new Date();
+  data.roomname = req.params.room;
+  storage.push(data);
+  //res.send("Success")
+  res.status(201);
+  res.end();
+  //console.log(req.body);
+});
+
+
 
 // We use node's http module to create a server.
 //
 // The function we pass to http.createServer will be used to handle all
 // incoming requests.
 // After creating the server, we will tell it to listen on the given port and IP. */
-var server = http.createServer(reqHandler.requestHandler);
-console.log("Listening on http://" + ip + ":" + port);
-server.listen(port, ip);
+// var server = http.createServer(reqHandler.requestHandler);
+// console.log("Listening on http://" + ip + ":" + port);
+// server.listen(port, ip);
 
 // To start this server, run:
 //
