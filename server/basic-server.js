@@ -30,10 +30,15 @@ var port = 3000;
 // special address that always refers to localhost.
 var ip = "127.0.0.1";
 
-
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan('combined'));
+
 
 var server = app.listen(port, ip, function () {
   console.log("Server is listening at http://%s:%s", ip, port);
@@ -44,45 +49,67 @@ var server = app.listen(port, ip, function () {
 // })
 
 //app.METHOD( URL , CB )
+//
+// app.all('/', function (req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header("Access-Control-Allow-Headers", "Origin, Null, X-Requested-With, Content-Type, Acceptß");
+//   next();
+//  });
 
-app.get('/classes/messages' , function (req, res) {
+app.get('/classes/messages' , function (req, res, next) {
   res.send({results: storage});
-  //request
-  //do something before response
-  //send response
   res.end();
+  next();
 });
 
-app.get('/classes/:room', function(req, res) {
-  var filter = _.filter(storage, function(val){
-    if(val.roomname === req.params.room) {
-      return val;
+app.route('/classes/:room')
+  .get(function(req, res) {
+    var filter = _.filter(storage, function(val){
+      if(val.roomname === req.params.room) {
+        return val;
+      }
+    });
+   res.json({results: filter});
+   res.end();
+  })
+  .post(function (req, res, next) {
+    var data = req.body;
+    if (!data.hasOwnProperty('username') || !data.hasOwnProperty('message') || Object.keys(data).length !== 2) { //number of keys may be 3
+      console.error('Invalid username/message text or properties');
     }
+    data.createdAt = new Date();
+    data.roomname = req.params.room;
+    storage.push(data);
+    res.status(201);
+    res.end();
+    next();
   });
-  res.json({results: filter});
-  res.end();
-});
 
-app.post('/send', function (req, res) {
+app.post('/send', function (req, res, next) {
   var data = req.body;
+  if (!data.hasOwnProperty('username') || !data.hasOwnProperty('message') || Object.keys(data).length > 3) { //number of keys may be 3
+    console.error('Invalid username/message text or properties');
+  }
+  data.roomname = data.roomname || 'lobby';
   data.createdAt = new Date();
   storage.push(data);
   //res.send("Success")
   res.status(201);
   res.end();
+  next();
   //console.log(req.body);
 });
 
-app.post('/classes/:room', function (req, res) {
-  var data = req.body;
-  data.createdAt = new Date();
-  data.roomname = req.params.room;
-  storage.push(data);
-  //res.send("Success")
-  res.status(201);
-  res.end();
-  //console.log(req.body);
-});
+// app.post('/classes/:room', function (req, res) {
+//   var data = req.body;
+//   data.createdAt = new Date();
+//   data.roomname = req.params.room;
+//   storage.push(data);
+//   //res.send("Success")
+//   res.status(201);
+//   res.end();
+//   //console.log(req.body);
+// });
 
 
 

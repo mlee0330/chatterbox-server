@@ -15,7 +15,10 @@ var messages = [];
 
 var router = function(request, response) {
   //check for 'type' if GET
+  if( request.method === 'GET') {
     //stringify messages and send back
+    JSON.stringify(messages);
+  }
   //
 };
 
